@@ -998,10 +998,15 @@ def walk_forward_endpoint():
         if not fmp_key:
             return jsonify({"error": "Missing fmp_key"}), 400
         
+        # Optional market filter: ["futures"], ["crypto"], or both
+        markets_filter = data.get("markets", None)  # e.g. ["futures"]
+        
         # Step 1: Generate all signals with forward paths
-        logger.info(f"[WF] Generating signals for all assets ({years}yr)...")
-        all_signals = []
         assets = list(ASSET_YAHOO_SYMBOLS.keys())
+        if markets_filter:
+            assets = [a for a in assets if ASSET_MARKET.get(a) in markets_filter]
+        logger.info(f"[WF] Generating signals for {len(assets)} assets ({years}yr, markets={markets_filter or 'all'})...")
+        all_signals = []
         for asset in assets:
             sigs = generate_signals_with_paths(asset, fmp_key, years, max_forward_bars=40)
             if sigs:
