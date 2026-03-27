@@ -9,6 +9,7 @@ COPY app.py .
 COPY historical_backtest.py .
 COPY tpsl_optimizer.py .
 COPY walk_forward.py .
+COPY comprehensive_validation.py .
 
 EXPOSE 8080
 
