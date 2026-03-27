@@ -1073,6 +1073,61 @@ def walk_forward_results():
     return jsonify(_walk_forward_results)
 
 
+# ── Comprehensive Validation Suite ───────────────────────────
+
+from comprehensive_validation import run_comprehensive_validation
+
+_comprehensive_results: Dict[str, Any] = {}
+
+
+@app.route("/validate-comprehensive", methods=["POST", "OPTIONS"])
+def validate_comprehensive():
+    """
+    The most rigorous possible validation.
+    Tests: walk-forward, transaction costs, parameter sensitivity,
+    multi-cutoff stability, and regime-conditional analysis.
+    Returns a score out of 100 and a final verdict.
+    
+    Takes 15-30 minutes. This is the definitive test.
+    
+    Request: {"fmp_key": "...", "years": 20}
+    """
+    if request.method == "OPTIONS":
+        return "", 204
+    if not check_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        data = request.get_json() or {}
+        fmp_key = data.get("fmp_key", os.environ.get("FMP_API_KEY", ""))
+        years = data.get("years", 20)
+        
+        if not fmp_key:
+            return jsonify({"error": "Missing fmp_key"}), 400
+        
+        logger.info(f"[COMPREHENSIVE] Starting {years}-year validation suite...")
+        result = run_comprehensive_validation(fmp_key, years)
+        
+        global _comprehensive_results
+        _comprehensive_results = result
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"[COMPREHENSIVE ERROR] {str(e)}", exc_info=True)
+        return jsonify({"error": str(e), "type": type(e).__name__}), 500
+
+
+@app.route("/validate-comprehensive/results", methods=["GET"])
+def comprehensive_results():
+    """Return last comprehensive validation results."""
+    if not check_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    if not _comprehensive_results:
+        return jsonify({"status": "no_results"})
+    return jsonify(_comprehensive_results)
+
+
 # ── Error handlers ────────────────────────────────────────────
 
 @app.errorhandler(404)
@@ -1090,13 +1145,6 @@ def not_found(e):
 def server_error(e):
     return jsonify({"error": "internal_server_error", "message": str(e)}), 500
 
-
-# ── Main ──────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    logger.info(f"Starting Strategy Lab on port {port}")
-    app.run(host="0.0.0.0", port=port)
 
 # ── Main ──────────────────────────────────────────────────────
 
